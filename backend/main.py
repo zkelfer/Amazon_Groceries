@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from .config import settings
 from .database import Base, engine
 from .routers import pantry, photos, recipes
 
@@ -14,7 +15,7 @@ app = FastAPI(title="Amazon Groceries", version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,3 +50,8 @@ def upload_page(request: Request):
 @app.get("/shopping")
 def shopping_page(request: Request):
     return templates.TemplateResponse("shopping_list.html", {"request": request})
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
