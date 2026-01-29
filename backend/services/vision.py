@@ -18,12 +18,16 @@ SYSTEM_PROMPT = (
     "identify all grocery or food items visible. The image may be a receipt, "
     "a photo of food items, or a pantry shelf.\n\n"
     "For each item detected, return:\n"
-    "- name: the grocery item name (lowercase, singular form)\n"
+    "- name: the full, specific grocery item name in lowercase. Preserve all "
+    "descriptors such as preparation style (sliced, diced, shredded), cut "
+    "(breast, thigh, fillet), sub-type (deli, smoked, aged), and variety "
+    "(e.g. 'sliced deli turkey breast', 'sliced gouda cheese', 'whole wheat "
+    "bread', 'extra virgin olive oil'). Do NOT shorten or genericize names.\n"
     "- quantity: numeric quantity if visible (null otherwise)\n"
     "- unit: unit of measurement if visible (null otherwise)\n"
     "- category: one of produce, dairy, meat, seafood, bakery, frozen, "
     "canned, dry goods, beverages, snacks, condiments, spices, or other\n"
-    "- notes: any extra detail like brand or variety (null otherwise)\n\n"
+    "- notes: any extra detail like brand (null otherwise)\n\n"
     "If no grocery items are detected, return an empty list."
 )
 
