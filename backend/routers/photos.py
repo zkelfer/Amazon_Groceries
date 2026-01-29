@@ -8,7 +8,12 @@ from ..services.vision import VisionAnalysisError, analyze_image
 router = APIRouter(prefix="/api/photos", tags=["photos"])
 log = logging.getLogger(__name__)
 
-_ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+_ALLOWED_MIME_TYPES = {
+    "image/jpeg", "image/png", "image/webp", "image/gif",
+    "image/heic", "image/heif",
+}
+# HEIC/HEIF need conversion to JPEG for Gemini (it doesn't accept HEIC)
+_NEEDS_CONVERSION = {"image/heic", "image/heif"}
 _MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
 
@@ -19,15 +24,38 @@ async def upload_photo(photo: UploadFile):
     Uses Gemini Vision to detect grocery items when configured.
     Falls back to a stub message when no API key is set.
     """
+    content_type = photo.content_type or "application/octet-stream"
+
     # Validate MIME type
-    if photo.content_type not in _ALLOWED_MIME_TYPES:
+    if content_type not in _ALLOWED_MIME_TYPES:
         raise HTTPException(
             status_code=415,
-            detail=f"Unsupported image type '{photo.content_type}'. "
-            f"Accepted types: {', '.join(sorted(_ALLOWED_MIME_TYPES))}",
+            detail=f"Unsupported image type '{content_type}'. "
+            f"Accepted types: JPEG, PNG, WebP, GIF, HEIC.",
         )
 
     image_bytes = await photo.read()
+    mime_type = content_type
+
+    # Convert HEIC/HEIF to JPEG for Gemini compatibility
+    if content_type in _NEEDS_CONVERSION:
+        try:
+            import pillow_heif
+            pillow_heif.register_heif_opener()
+            from PIL import Image
+            import io
+
+            img = Image.open(io.BytesIO(image_bytes))
+            buf = io.BytesIO()
+            img.convert("RGB").save(buf, format="JPEG", quality=90)
+            image_bytes = buf.getvalue()
+            mime_type = "image/jpeg"
+        except Exception as exc:
+            log.warning("HEIC conversion failed: %s", exc)
+            raise HTTPException(
+                status_code=415,
+                detail="Could not process HEIC/HEIF image. Try converting to JPEG first.",
+            ) from exc
 
     # Validate file size
     if len(image_bytes) > _MAX_FILE_SIZE:
@@ -38,7 +66,7 @@ async def upload_photo(photo: UploadFile):
         )
 
     try:
-        items = await analyze_image(image_bytes, photo.content_type)
+        items = await analyze_image(image_bytes, mime_type)
     except VisionAnalysisError as exc:
         log.error("Vision analysis failed: %s", exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
