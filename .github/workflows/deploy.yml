@@ -28,7 +28,6 @@ jobs:
           curl -X POST \
             -u "\$${USERNAME}:${PASSWORD}" \
             -H "Content-Type: application/zip" \
-            -H "SCM_DO_BUILD_DURING_DEPLOYMENT: true" \
             --data-binary @deploy.zip \
-            "${{ env.SCM_URL }}/api/zipdeploy" \
+            "${{ env.SCM_URL }}/api/zipdeploy?isAsync=false&SCM_DO_BUILD_DURING_DEPLOYMENT=true" \
             --fail --silent --show-error --max-time 600
