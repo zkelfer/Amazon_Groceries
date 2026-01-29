@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: amazon-groceries
   PYTHON_VERSION: "3.12"
+  SCM_URL: https://amazon-groceries-fnedgvafh5aveeg2.scm.canadacentral-01.azurewebsites.net
 
 jobs:
   deploy:
@@ -16,18 +16,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-          cache-dependency-path: backend/requirements.txt
+      - name: Create deployment package
+        run: zip -r deploy.zip . -x '.git/*' '.github/*' '__pycache__/*' '*.pyc' '.venv/*'
 
-      - name: Install dependencies
-        run: pip install -r backend/requirements.txt
+      - name: Deploy to Azure via Kudu zipdeploy
+        run: |
+          # Extract credentials from publish profile
+          USERNAME=$(echo '${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}' | grep -oP 'userName="\$\K[^"]+' | head -1)
+          PASSWORD=$(echo '${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}' | grep -oP 'userPWD="\K[^"]+' | head -1)
 
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: ${{ env.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          curl -X POST \
+            -u "\$${USERNAME}:${PASSWORD}" \
+            -H "Content-Type: application/zip" \
+            -H "SCM_DO_BUILD_DURING_DEPLOYMENT: true" \
+            --data-binary @deploy.zip \
+            "${{ env.SCM_URL }}/api/zipdeploy" \
+            --fail --silent --show-error --max-time 600
