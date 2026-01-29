@@ -103,22 +103,54 @@ if (categoryFilter) categoryFilter.addEventListener('change', renderPantry);
 const uploadForm = document.getElementById('upload-form');
 if (uploadForm) uploadForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const fd = new FormData(uploadForm);
-    const res = await fetch(`${API}/photos/upload`, { method: 'POST', body: fd });
-    const data = await res.json();
-    const list = document.getElementById('detected-items');
+    const submitBtn = uploadForm.querySelector('button[type="submit"]');
     const result = document.getElementById('upload-result');
-    list.innerHTML = data.items.map(i => `<li>${esc(i.name)}${i.quantity ? ' — ' + i.quantity + ' ' + (i.unit || '') : ''}</li>`).join('');
-    result.classList.remove('hidden');
+    const list = document.getElementById('detected-items');
+    const errorDiv = document.getElementById('upload-error');
 
-    document.getElementById('add-all-btn').onclick = async () => {
-        await fetch(`${API}/pantry/bulk`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data.items),
-        });
-        alert('Items added to pantry!');
-    };
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Analyzing…';
+    result.classList.add('hidden');
+    if (errorDiv) errorDiv.classList.add('hidden');
+
+    try {
+        const fd = new FormData(uploadForm);
+        const res = await fetch(`${API}/photos/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.detail || `Upload failed (${res.status})`);
+        }
+
+        if (data.items.length === 0) {
+            list.innerHTML = `<li class="text-muted">${esc(data.message)}</li>`;
+        } else {
+            list.innerHTML = data.items.map(i =>
+                `<li>${esc(i.name)}${i.quantity ? ' — ' + i.quantity + ' ' + (i.unit || '') : ''}${i.category ? ' <span class="tag">' + esc(i.category) + '</span>' : ''}</li>`
+            ).join('');
+        }
+        result.classList.remove('hidden');
+
+        document.getElementById('add-all-btn').onclick = async () => {
+            await fetch(`${API}/pantry/bulk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data.items),
+            });
+            alert('Items added to pantry!');
+        };
+    } catch (err) {
+        if (errorDiv) {
+            errorDiv.textContent = err.message;
+            errorDiv.classList.remove('hidden');
+        } else {
+            alert(err.message);
+        }
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Upload & Detect';
+    }
 });
 
 // --- Helpers ---

@@ -114,3 +114,25 @@ tr:hover { background: #fafafa; }
     align-items: center;
 }
 #shopping-items li.purchased { opacity: 0.5; text-decoration: line-through; }
+
+.error-message {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-top: 1rem;
+}
+.text-muted { color: #888; font-style: italic; }
+.tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
