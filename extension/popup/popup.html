@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Groceries</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <header>
+        <h1>🛒 Amazon Groceries</h1>
+    </header>
+
+    <div id="loading" class="state">
+        <p>Scanning page for recipe…</p>
+    </div>
+
+    <div id="no-recipe" class="state hidden">
+        <p>No recipe found on this page.</p>
+        <p class="hint">Visit a recipe page on a supported site (allrecipes, foodnetwork, epicurious, etc.)</p>
+    </div>
+
+    <div id="error" class="state hidden">
+        <p class="error-msg"></p>
+        <p class="hint">Make sure the backend is running at localhost:8000</p>
+    </div>
+
+    <div id="results" class="state hidden">
+        <h2 id="recipe-title"></h2>
+        <div id="summary" class="summary"></div>
+        <ul id="ingredient-list"></ul>
+    </div>
+
+    <script src="../utils/api-client.js"></script>
+    <script src="popup.js"></script>
+</body>
+</html>

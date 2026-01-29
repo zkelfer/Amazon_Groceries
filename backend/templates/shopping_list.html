@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Shopping List — Amazon Groceries{% endblock %}
+{% block content %}
+<h1>Shopping List</h1>
+
+<div class="form-card">
+    <h3>Quick Recipe Diff</h3>
+    <p>Paste ingredient lines (one per line) to see what you need to buy.</p>
+    <form id="diff-form">
+        <label>Recipe Title <input type="text" name="recipe_title" placeholder="Optional"></label>
+        <label>Ingredients
+            <textarea name="ingredients" rows="6" style="width:100%;padding:0.5rem;border:1px solid #ccc;border-radius:4px;font-family:inherit;" placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"></textarea>
+        </label>
+        <button type="submit" class="btn btn-primary">Compare to Pantry</button>
+    </form>
+</div>
+
+<div id="diff-result" class="hidden">
+    <h2>Results</h2>
+    <p id="diff-summary"></p>
+    <ul id="shopping-items"></ul>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+const diffForm = document.getElementById('diff-form');
+diffForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(diffForm);
+    const lines = fd.get('ingredients').split('\n').map(l => l.trim()).filter(Boolean);
+    if (!lines.length) return;
+
+    const res = await fetch('/api/recipes/diff', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            ingredients: lines,
+            recipe_title: fd.get('recipe_title') || null,
+        }),
+    });
+    const data = await res.json();
+    const result = document.getElementById('diff-result');
+    const summary = document.getElementById('diff-summary');
+    const list = document.getElementById('shopping-items');
+
+    summary.textContent = `${data.in_pantry_count} in pantry, ${data.missing_count} missing`;
+    list.innerHTML = data.ingredients.map(ing => {
+        const badge = ing.in_pantry
+            ? '<span class="badge badge-success">In Pantry</span>'
+            : '<span class="badge badge-danger">Missing</span>';
+        const link = ing.whole_foods_url
+            ? ` <a href="${ing.whole_foods_url}" target="_blank" rel="noopener">Buy on Whole Foods</a>`
+            : '';
+        const match = ing.in_pantry && ing.pantry_match
+            ? ` <small>(matched: ${esc(ing.pantry_match)})</small>`
+            : '';
+        return `<li>${badge} ${esc(ing.raw)}${match}${link}</li>`;
+    }).join('');
+    result.classList.remove('hidden');
+});
+
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+}
+</script>
+{% endblock %}

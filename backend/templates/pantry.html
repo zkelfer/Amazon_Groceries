@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Pantry — Amazon Groceries{% endblock %}
+{% block content %}
+<h1>Pantry Inventory</h1>
+
+<div class="controls">
+    <input type="text" id="search" placeholder="Search items…">
+    <select id="category-filter">
+        <option value="">All Categories</option>
+    </select>
+    <button id="add-btn" class="btn btn-primary">+ Add Item</button>
+</div>
+
+<div id="add-form" class="form-card hidden">
+    <h3>Add Pantry Item</h3>
+    <form id="pantry-form">
+        <label>Name <input type="text" name="name" required></label>
+        <label>Quantity <input type="number" name="quantity" step="any"></label>
+        <label>Unit <input type="text" name="unit" placeholder="cups, lbs, cloves…"></label>
+        <label>Category <input type="text" name="category" placeholder="produce, dairy…"></label>
+        <label>Notes <input type="text" name="notes"></label>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save</button>
+            <button type="button" id="cancel-btn" class="btn">Cancel</button>
+        </div>
+    </form>
+</div>
+
+<table id="pantry-table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Qty</th>
+            <th>Unit</th>
+            <th>Category</th>
+            <th>Notes</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody id="pantry-body"></tbody>
+</table>
+{% endblock %}
