@@ -45,16 +45,49 @@ def create_pantry_item(body: PantryItemCreate, db: Session = Depends(get_db)):
 def bulk_create_pantry_items(
     items: list[PantryItemCreate], db: Session = Depends(get_db)
 ):
-    created = []
+    # Deduplicate incoming items by name, summing quantities
+    merged: dict[str, PantryItemCreate] = {}
     for body in items:
-        item = PantryItem(**body.model_dump())
-        item.name = item.name.strip().lower()
-        db.add(item)
-        created.append(item)
+        key = body.name.strip().lower()
+        if key in merged:
+            existing = merged[key]
+            if body.quantity and existing.quantity:
+                merged[key] = existing.model_copy(
+                    update={"quantity": existing.quantity + body.quantity}
+                )
+            elif body.quantity:
+                merged[key] = existing.model_copy(update={"quantity": body.quantity})
+        else:
+            merged[key] = body
+
+    result = []
+    for key, body in merged.items():
+        # Check if item already exists in pantry
+        existing = db.query(PantryItem).filter(
+            func.lower(PantryItem.name) == key
+        ).first()
+
+        if existing:
+            # Merge: add quantities together
+            if body.quantity:
+                existing.quantity = (existing.quantity or 0) + body.quantity
+            if body.unit and not existing.unit:
+                existing.unit = body.unit
+            if body.category and not existing.category:
+                existing.category = body.category
+            if body.notes and not existing.notes:
+                existing.notes = body.notes
+            result.append(existing)
+        else:
+            item = PantryItem(**body.model_dump())
+            item.name = key
+            db.add(item)
+            result.append(item)
+
     db.commit()
-    for item in created:
+    for item in result:
         db.refresh(item)
-    return created
+    return result
 
 
 @router.put("/{item_id}", response_model=PantryItemOut)
