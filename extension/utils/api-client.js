@@ -3,7 +3,22 @@
  */
 
 const ApiClient = {
-  BASE_URL: 'http://localhost:8000',
+  BASE_URL: (() => {
+    const stored = typeof chrome !== 'undefined' && chrome.storage
+      ? null  // will be overridden at runtime
+      : null;
+    // Default to localhost for development; configurable via setBaseUrl()
+    return 'http://localhost:8000';
+  })(),
+
+  setBaseUrl(url) {
+    // Enforce HTTPS for non-localhost backends
+    const parsed = new URL(url);
+    if (!['localhost', '127.0.0.1'].includes(parsed.hostname) && parsed.protocol !== 'https:') {
+      parsed.protocol = 'https:';
+    }
+    this.BASE_URL = parsed.origin;
+  },
 
   async recipeDiff(ingredients, recipeTitle = null, recipeUrl = null) {
     const res = await fetch(`${this.BASE_URL}/api/recipes/diff`, {

@@ -6,10 +6,11 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
     gemini_model: str = "gemini-2.5-flash"
-    backend_host: str = "0.0.0.0"
+    backend_host: str = "127.0.0.1"
     backend_port: int = 8000
-    allowed_origins: str = "*"
+    allowed_origins: str = "http://localhost:5173,http://localhost:3000"
     environment: str = "development"
+    api_key: str = ""
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
@@ -21,9 +22,9 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        if self.allowed_origins == "*":
-            return ["*"]
-        return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        origins = [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        # Never allow wildcard — require explicit origins
+        return [o for o in origins if o != "*"]
 
 
 settings = Settings()

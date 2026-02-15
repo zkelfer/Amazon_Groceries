@@ -34,7 +34,22 @@ async def upload_photo(photo: UploadFile):
             f"Accepted types: JPEG, PNG, WebP, GIF, HEIC.",
         )
 
-    image_bytes = await photo.read()
+    # Read file in chunks to enforce size limit before loading fully into memory
+    chunks = []
+    total_size = 0
+    while True:
+        chunk = await photo.read(64 * 1024)  # 64 KB chunks
+        if not chunk:
+            break
+        total_size += len(chunk)
+        if total_size > _MAX_FILE_SIZE:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Image too large (>{_MAX_FILE_SIZE / 1024 / 1024:.0f} MB). "
+                f"Maximum size is {_MAX_FILE_SIZE / 1024 / 1024:.0f} MB.",
+            )
+        chunks.append(chunk)
+    image_bytes = b"".join(chunks)
     mime_type = content_type
 
     # Convert HEIC/HEIF to JPEG for Gemini compatibility
@@ -57,19 +72,14 @@ async def upload_photo(photo: UploadFile):
                 detail="Could not process HEIC/HEIF image. Try converting to JPEG first.",
             ) from exc
 
-    # Validate file size
-    if len(image_bytes) > _MAX_FILE_SIZE:
-        raise HTTPException(
-            status_code=413,
-            detail=f"Image too large ({len(image_bytes) / 1024 / 1024:.1f} MB). "
-            f"Maximum size is {_MAX_FILE_SIZE / 1024 / 1024:.0f} MB.",
-        )
-
     try:
         items = await analyze_image(image_bytes, mime_type)
     except VisionAnalysisError as exc:
         log.error("Vision analysis failed: %s", exc)
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=502,
+            detail="Image analysis failed. Please try again later.",
+        ) from exc
 
     # Not configured — return stub
     if items is None:

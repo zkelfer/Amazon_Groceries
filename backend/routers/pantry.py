@@ -19,7 +19,8 @@ def list_pantry(
     if category:
         q = q.filter(func.lower(PantryItem.category) == category.lower())
     if search:
-        q = q.filter(PantryItem.name.ilike(f"%{search}%"))
+        escaped = search.replace("%", r"\%").replace("_", r"\_")
+        q = q.filter(PantryItem.name.ilike(f"%{escaped}%", escape="\\"))
     return q.order_by(PantryItem.name).all()
 
 

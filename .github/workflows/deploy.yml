@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  SCM_URL: amazon-groceries-fnedgvafh5aveeg2.scm.canadacentral-01.azurewebsites.net
+  AZURE_WEBAPP_NAME: amazon-groceries
 
 jobs:
   deploy:
@@ -17,10 +17,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Deploy via git push to Azure Kudu
-        run: |
-          USERNAME=$(echo '${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}' | grep -oP 'userName="\$\K[^"]+' | head -1)
-          PASSWORD=$(echo '${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}' | grep -oP 'userPWD="\K[^"]+' | head -1)
-
-          git remote add azure "https://\$${USERNAME}:${PASSWORD}@${{ env.SCM_URL }}/amazon-groceries.git" 2>/dev/null || true
-          git push azure HEAD:master --force
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}

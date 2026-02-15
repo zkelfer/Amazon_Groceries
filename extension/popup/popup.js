@@ -63,7 +63,14 @@ async function init() {
         details += `<span class="ing-match">(matched: ${esc(ing.pantry_match)})</span>`;
       }
       if (ing.whole_foods_url) {
-        details += `<a class="ing-link" href="${ing.whole_foods_url}" target="_blank" rel="noopener">Buy on Whole Foods →</a>`;
+        try {
+          const url = new URL(ing.whole_foods_url);
+          if (['http:', 'https:'].includes(url.protocol)) {
+            details += `<a class="ing-link" href="${esc(ing.whole_foods_url)}" target="_blank" rel="noopener">Buy on Whole Foods →</a>`;
+          }
+        } catch (e) {
+          // skip invalid URLs
+        }
       }
 
       return `<li>${badge}<div class="ing-details">${details}</div></li>`;

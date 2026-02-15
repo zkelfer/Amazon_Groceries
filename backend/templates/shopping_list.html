@@ -48,9 +48,17 @@ diffForm.addEventListener('submit', async (e) => {
         const badge = ing.in_pantry
             ? '<span class="badge badge-success">In Pantry</span>'
             : '<span class="badge badge-danger">Missing</span>';
-        const link = ing.whole_foods_url
-            ? ` <a href="${ing.whole_foods_url}" target="_blank" rel="noopener">Buy on Whole Foods</a>`
-            : '';
+        let link = '';
+        if (ing.whole_foods_url) {
+            try {
+                const url = new URL(ing.whole_foods_url);
+                if (['http:', 'https:'].includes(url.protocol)) {
+                    link = ` <a href="${esc(ing.whole_foods_url)}" target="_blank" rel="noopener">Buy on Whole Foods</a>`;
+                }
+            } catch (e) {
+                // skip invalid URLs
+            }
+        }
         const match = ing.in_pantry && ing.pantry_match
             ? ` <small>(matched: ${esc(ing.pantry_match)})</small>`
             : '';
